@@ -87,6 +87,7 @@ func (c *clientConnectionActor) Receive(ctx *actor.ReceiveContext) {
 			registerResp := ctx.Ask(sa, &reg, c.cfg.RequestTimeout)
 			if err != nil {
 				ctx.Logger().Error("error registering connection with session, shutting down", "sessionId", c.sessionId, "err", err)
+				c.channel.Close()
 				ctx.Shutdown()
 				return
 			}
@@ -94,12 +95,14 @@ func (c *clientConnectionActor) Receive(ctx *actor.ReceiveContext) {
 			rr, ok := registerResp.(*mcppb.RegisterConnectionResponse)
 			if !ok {
 				ctx.Logger().Error("unexpected response to registering connection with session, shutting down", "sessionId", c.sessionId, "err", err)
+				c.channel.Close()
 				ctx.Shutdown()
 				return
 			}
 
 			if !rr.GetSuccess() {
 				ctx.Logger().Error("unexpected failure registering connection with session, shutting down", "sessionId", c.sessionId, "err", rr.GetError())
+				c.channel.Close()
 				ctx.Shutdown()
 				return
 			}

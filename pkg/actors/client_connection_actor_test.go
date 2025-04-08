@@ -286,10 +286,8 @@ func TestClientConnectionActor(t *testing.T) {
 		// Give some time for the message to be processed
 		time.Sleep(500 * time.Millisecond)
 
-		// Verify an endpoint was sent with error
-		endpoints := channel.GetEndpoints()
-		assert.GreaterOrEqual(t, len(endpoints), 1)
-		assert.Equal(t, "error:session-not-found", endpoints[0])
+		// Verify the connection is closed instead of sending an error
+		assert.True(t, channel.IsClosed(), "Expected connection to be closed when session actor not found")
 
 		// The actor should have shut itself down, but we'll try to clean up anyway
 		poison := &goaktpb.PoisonPill{}
