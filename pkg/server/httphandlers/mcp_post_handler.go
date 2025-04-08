@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/traego/scaled-mcp/scaled-mcp-server/pkg/actors"
 	"log/slog"
 	"net/http"
+
+	"github.com/traego/scaled-mcp/scaled-mcp-server/pkg/actors"
 
 	"github.com/tochemey/goakt/v3/actor"
 	"github.com/traego/scaled-mcp/scaled-mcp-server/internal/utils"
@@ -18,10 +19,7 @@ import (
 func (h *MCPHandler) HandleMCPPost(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	sessionId := r.Header.Get("Mcp-Session-Id")
-	demandInitialize := false
-	if sessionId == "" {
-		demandInitialize = true
-	}
+	demandInitialize := sessionId == ""
 
 	mcpRequest, err := parseMessageRequest(r)
 	if err != nil {
@@ -47,7 +45,16 @@ func (h *MCPHandler) handleMcpMessages(ctx context.Context, sessionId string, w 
 		}
 
 		_, sa, err := h.actorSystem.ActorOf(ctx, utils.GetSessionActorName(sessionId))
+		if err != nil {
+			handleError(w, err, mr.Message.ID)
+			return
+		}
+
 		respMsg, err := actor.Ask(ctx, sa, protoMsg, h.config.RequestTimeout)
+		if err != nil {
+			handleError(w, err, mr.Message.ID)
+			return
+		}
 
 		rjm, ok := respMsg.(*mcppb.JsonRpcResponse)
 		if !ok {
@@ -107,6 +114,11 @@ func (h *MCPHandler) handleMcpInitDemand(ctx context.Context, w http.ResponseWri
 				return
 			}
 			protoInit, err := protocol.ConvertJSONToProtoRequest(msg)
+			if err != nil {
+				handleError(w, err, msg.ID)
+				return
+			}
+
 			initResp, err := actor.Ask(ctx, act, protoInit, h.config.RequestTimeout)
 			if err != nil {
 				handleError(w, err, msg.ID)
@@ -119,6 +131,11 @@ func (h *MCPHandler) handleMcpInitDemand(ctx context.Context, w http.ResponseWri
 			}
 
 			ir, err := protocol.ConvertProtoToJSONResponse(jrr)
+			if err != nil {
+				handleError(w, err, msg.ID)
+				return
+			}
+
 			writeMessage(w, msg.ID, ir)
 			return
 		} else {

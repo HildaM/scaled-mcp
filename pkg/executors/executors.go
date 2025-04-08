@@ -51,17 +51,14 @@ func (e *Executors) HandleMethod(ctx context.Context, method string, req *mcppb.
 			if e.Tools.CanHandleMethod(method) {
 				return e.Tools.HandleMethod(ctx, method, req)
 			}
-			break
 		case "resources":
 			if e.Resources.CanHandleMethod(method) {
 				return e.Resources.HandleMethod(ctx, method, req)
 			}
-			break
 		case "prompts":
 			if e.Prompts.CanHandleMethod(method) {
 				return e.Prompts.HandleMethod(ctx, method, req)
 			}
-			break
 		}
 	}
 

@@ -75,7 +75,7 @@ func (c *clientConnectionActor) Receive(ctx *actor.ReceiveContext) {
 			if err != nil {
 				ctx.Logger().Error("error registering connection with session, shutting down", "sessionId", c.sessionId, "err", err)
 				// Send an empty endpoint to signal failure
-				c.channel.SendEndpoint("error:session-not-found")
+				c.channel.Close()
 				ctx.Shutdown()
 				return
 			}

@@ -47,5 +47,4 @@ func (h *MCPHandler) HandleSSEGet(w http.ResponseWriter, r *http.Request) {
 	case <-dc:
 	case <-channel.Done:
 	}
-	return
 }
