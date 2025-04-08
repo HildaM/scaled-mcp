@@ -1,0 +1,82 @@
+syntax = "proto3";
+
+package mcppb;
+
+option go_package = "github.com/traego/scaled-mcp/scaled-mcp-server/pkg/proto/mcppb";
+
+import "google/protobuf/struct.proto";
+
+message WrappedRequest {
+  bool is_ask = 1;
+  string respond_to_connection_id = 2;
+  JsonRpcRequest request = 3;
+}
+
+// JsonRpcRequest represents a JSON-RPC request message
+message JsonRpcRequest {
+  string jsonrpc = 1; // Version of the JSON-RPC protocol, typically "2.0"
+  oneof id {
+    int64 int_id = 2;
+    string string_id = 3;
+    bool null_id = 4; // For notifications (no ID)
+  }
+  string method = 5; // Method to invoke
+  string params_json = 6; // Parameters for the method as JSON string
+}
+
+// JsonRpcResponse represents a JSON-RPC response message
+message JsonRpcResponse {
+  string jsonrpc = 1; // Version of the JSON-RPC protocol, typically "2.0"
+  oneof id {
+    int64 int_id = 2;
+    string string_id = 3;
+    bool null_id = 4; // Should be null for notifications
+  }
+  oneof response {
+    string result_json = 5; // Result of the method invocation as JSON string
+    JsonRpcError error = 6; // Error object if the invocation failed
+  }
+}
+
+// JsonRpcError represents a JSON-RPC error object
+message JsonRpcError {
+  int32 code = 1; // Error code
+  string message = 2; // Error message
+  string data_json = 3; // Additional error data as JSON string (optional)
+}
+
+// JsonRpcBatchRequest represents a batch of JSON-RPC requests
+message JsonRpcBatchRequest {
+  repeated JsonRpcRequest requests = 1;
+}
+
+// JsonRpcBatchResponse represents a batch of JSON-RPC responses
+message JsonRpcBatchResponse {
+  repeated JsonRpcResponse responses = 1;
+}
+
+// McpSessionRequest is a message sent to a session actor to process a JSON-RPC request
+message McpSessionRequest {
+  string session_id = 1;
+  oneof request {
+    JsonRpcRequest single_request = 2;
+    JsonRpcBatchRequest batch_request = 3;
+  }
+  bool needs_response = 4; // Whether a response is expected
+}
+
+// McpSessionResponse is a message sent from a session actor with a JSON-RPC response
+message McpSessionResponse {
+  string session_id = 1;
+  oneof response {
+    JsonRpcResponse single_response = 2;
+    JsonRpcBatchResponse batch_response = 3;
+  }
+}
+
+// McpSessionInitialize is used to initialize an MCP session actor
+message McpSessionInitialize {
+  string session_id = 1;
+  bool prefer_sse = 2; // Whether to prefer SSE over JSON when possible
+  string server_capabilities_json = 3; // Server capabilities as JSON string
+}

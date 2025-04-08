@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package mcppb;
+
+option go_package = "github.com/traego/scaled-mcp/scaled-mcp-server/pkg/proto/mcppb";
+
+// MessageType defines the types of messages that can be sent to a session actor
+enum MessageType {
+  UNKNOWN = 0;
+  SEND = 1;
+  CLOSE = 2;
+  INITIALIZE = 3;
+  HEARTBEAT = 4;
+}
+
+// SessionActorMessage is a message that can be sent to a session actor
+message SessionActorMessage {
+  MessageType type = 1;
+  string payload = 2;
+}
+
+// InitSessionActorMessage is used to initialize a session actor
+message InitSessionActorMessage {
+  string session_id = 1;
+  // We can't directly include the interfaces in protobuf,
+  // so we'll handle them separately in the actor implementation
+}
+
+// SSEEventMessage represents an SSE event to be sent to the client
+message SSEEventMessage {
+  bytes id = 1;
+  bytes data = 2;
+  bytes event = 3;
+}
+
+// SessionHeartbeatMessage is sent periodically to keep the session alive
+message SessionHeartbeatMessage {
+  string session_id = 1;
+  int64 timestamp = 2;
+}

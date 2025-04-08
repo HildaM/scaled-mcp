@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package mcppb;
+
+option go_package = "github.com/traego/scaled-mcp/scaled-mcp-server/pkg/proto/mcppb;mcppb";
+
+message TryCleanupPreInitialized{}
+
+message RegisterConnection {
+  string connectionId = 1;
+}
+
+message RegisterConnectionResponse {
+  bool success = 1;
+  string error = 2;
+}
