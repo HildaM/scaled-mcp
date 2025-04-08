@@ -7,16 +7,16 @@ type ToolBuilder struct {
 
 // ParameterBuilder is a builder for creating tool parameters
 type ParameterBuilder struct {
-	name        string
-	property    SchemaProperty
-	tool        *ToolBuilder
+	name     string
+	property SchemaProperty
+	tool     *ToolBuilder
 }
 
 // NewTool creates a new tool builder
 func NewTool(name string) *ToolBuilder {
 	return &ToolBuilder{
 		tool: Tool{
-			Name:        name,
+			Name: name,
 			InputSchema: InputSchema{
 				Type:       "object",
 				Properties: make(map[string]SchemaProperty),

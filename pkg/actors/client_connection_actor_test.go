@@ -17,13 +17,13 @@ import (
 
 // InMemoryChannel is an in-memory implementation of OneWayChannel for testing
 type InMemoryChannel struct {
-	mu            sync.Mutex
-	messages      []Message
-	endpoints     []string
-	closed        bool
-	sendFunc      func(string, interface{}) error
-	endpointFunc  func(string) error
-	closeFunc     func()
+	mu           sync.Mutex
+	messages     []Message
+	endpoints    []string
+	closed       bool
+	sendFunc     func(string, interface{}) error
+	endpointFunc func(string) error
+	closeFunc    func()
 }
 
 // Message represents a message sent through the channel
@@ -45,20 +45,20 @@ func NewInMemoryChannel() *InMemoryChannel {
 func (c *InMemoryChannel) Send(eventType string, data interface{}) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	if c.closed {
 		return assert.AnError
 	}
-	
+
 	c.messages = append(c.messages, Message{
 		EventType: eventType,
 		Data:      data,
 	})
-	
+
 	if c.sendFunc != nil {
 		return c.sendFunc(eventType, data)
 	}
-	
+
 	return nil
 }
 
@@ -66,17 +66,17 @@ func (c *InMemoryChannel) Send(eventType string, data interface{}) error {
 func (c *InMemoryChannel) SendEndpoint(endpoint string) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	if c.closed {
 		return assert.AnError
 	}
-	
+
 	c.endpoints = append(c.endpoints, endpoint)
-	
+
 	if c.endpointFunc != nil {
 		return c.endpointFunc(endpoint)
 	}
-	
+
 	return nil
 }
 
@@ -84,9 +84,9 @@ func (c *InMemoryChannel) SendEndpoint(endpoint string) error {
 func (c *InMemoryChannel) Close() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	c.closed = true
-	
+
 	if c.closeFunc != nil {
 		c.closeFunc()
 	}
@@ -96,7 +96,7 @@ func (c *InMemoryChannel) Close() {
 func (c *InMemoryChannel) GetMessages() []Message {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	return c.messages
 }
 
@@ -104,7 +104,7 @@ func (c *InMemoryChannel) GetMessages() []Message {
 func (c *InMemoryChannel) GetEndpoints() []string {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	return c.endpoints
 }
 
@@ -112,7 +112,7 @@ func (c *InMemoryChannel) GetEndpoints() []string {
 func (c *InMemoryChannel) IsClosed() bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	return c.closed
 }
 
@@ -120,7 +120,7 @@ func (c *InMemoryChannel) IsClosed() bool {
 func (c *InMemoryChannel) SetSendFunc(f func(string, interface{}) error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	c.sendFunc = f
 }
 
@@ -128,7 +128,7 @@ func (c *InMemoryChannel) SetSendFunc(f func(string, interface{}) error) {
 func (c *InMemoryChannel) SetEndpointFunc(f func(string) error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	c.endpointFunc = f
 }
 
@@ -136,7 +136,7 @@ func (c *InMemoryChannel) SetEndpointFunc(f func(string) error) {
 func (c *InMemoryChannel) SetCloseFunc(f func()) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	c.closeFunc = f
 }
 
@@ -153,7 +153,7 @@ func NewMockSessionActor(registerFunc func(*mcppb.RegisterConnection) *mcppb.Reg
 			return &mcppb.RegisterConnectionResponse{Success: true}
 		}
 	}
-	
+
 	return &MockSessionActor{
 		registerFunc: registerFunc,
 	}
@@ -224,7 +224,7 @@ func TestClientConnectionActor(t *testing.T) {
 		// Clean up without asserting - the actor may already be stopping
 		poison := &goaktpb.PoisonPill{}
 		_ = actor.Tell(ctx, ccaPID, poison)
-		
+
 		time.Sleep(100 * time.Millisecond)
 	})
 
@@ -256,7 +256,7 @@ func TestClientConnectionActor(t *testing.T) {
 		// Clean up without asserting - the actor may already be stopping
 		poison := &goaktpb.PoisonPill{}
 		_ = actor.Tell(ctx, ccaPID, poison)
-		
+
 		time.Sleep(100 * time.Millisecond)
 	})
 
@@ -290,11 +290,11 @@ func TestClientConnectionActor(t *testing.T) {
 		endpoints := channel.GetEndpoints()
 		assert.GreaterOrEqual(t, len(endpoints), 1)
 		assert.Equal(t, "error:session-not-found", endpoints[0])
-		
+
 		// The actor should have shut itself down, but we'll try to clean up anyway
 		poison := &goaktpb.PoisonPill{}
 		_ = actor.Tell(ctx, ccaPID, poison)
-		
+
 		time.Sleep(100 * time.Millisecond)
 	})
 
@@ -340,7 +340,7 @@ func TestClientConnectionActor(t *testing.T) {
 		err = actor.Tell(ctx, sessionPID, poison)
 		require.NoError(t, err)
 		_ = actor.Tell(ctx, ccaPID, poison)
-		
+
 		time.Sleep(100 * time.Millisecond)
 	})
 
@@ -387,7 +387,7 @@ func TestClientConnectionActor(t *testing.T) {
 		poison := &goaktpb.PoisonPill{}
 		err = actor.Tell(ctx, sessionPID, poison)
 		require.NoError(t, err)
-		
+
 		time.Sleep(100 * time.Millisecond)
 	})
 
@@ -450,7 +450,7 @@ func TestClientConnectionActor(t *testing.T) {
 		err = actor.Tell(ctx, sessionPID, poison)
 		require.NoError(t, err)
 		_ = actor.Tell(ctx, ccaPID, poison)
-		
+
 		time.Sleep(100 * time.Millisecond)
 	})
 
@@ -488,7 +488,7 @@ func TestClientConnectionActor(t *testing.T) {
 		// Clean up - this might fail if the actor already shut down
 		poison := &goaktpb.PoisonPill{}
 		_ = actor.Tell(ctx, ccaPID, poison)
-		
+
 		time.Sleep(100 * time.Millisecond)
 	})
 
@@ -540,7 +540,7 @@ func TestClientConnectionActor(t *testing.T) {
 		err = actor.Tell(ctx, sessionPID, poison)
 		require.NoError(t, err)
 		_ = actor.Tell(ctx, ccaPID, poison)
-		
+
 		time.Sleep(100 * time.Millisecond)
 	})
 
@@ -589,7 +589,7 @@ func TestClientConnectionActor(t *testing.T) {
 		err = actor.Tell(ctx, sessionPID, poison)
 		require.NoError(t, err)
 		_ = actor.Tell(ctx, ccaPID, poison)
-		
+
 		time.Sleep(100 * time.Millisecond)
 	})
 
@@ -650,7 +650,7 @@ func TestClientConnectionActor(t *testing.T) {
 		err = actor.Tell(ctx, sessionPID, poison)
 		require.NoError(t, err)
 		_ = actor.Tell(ctx, ccaPID, poison)
-		
+
 		time.Sleep(100 * time.Millisecond)
 	})
 }

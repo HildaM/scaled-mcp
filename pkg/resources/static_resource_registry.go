@@ -13,20 +13,20 @@ type ResourceProvider func(ctx context.Context, uri string) ([]ResourceContents,
 
 // StaticResourceRegistry is a registry that holds a fixed set of resources
 type StaticResourceRegistry struct {
-	mu               sync.RWMutex
-	resources        map[string]Resource
+	mu                sync.RWMutex
+	resources         map[string]Resource
 	resourceTemplates map[string]ResourceTemplate
-	providers        map[string]ResourceProvider
-	subscribers      map[string]map[string]bool // uri -> set of subscriber IDs
+	providers         map[string]ResourceProvider
+	subscribers       map[string]map[string]bool // uri -> set of subscriber IDs
 }
 
 // NewStaticResourceRegistry creates a new static resource registry
 func NewStaticResourceRegistry() *StaticResourceRegistry {
 	return &StaticResourceRegistry{
-		resources:        make(map[string]Resource),
+		resources:         make(map[string]Resource),
 		resourceTemplates: make(map[string]ResourceTemplate),
-		providers:        make(map[string]ResourceProvider),
-		subscribers:      make(map[string]map[string]bool),
+		providers:         make(map[string]ResourceProvider),
+		subscribers:       make(map[string]map[string]bool),
 	}
 }
 

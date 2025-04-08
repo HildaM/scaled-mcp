@@ -65,6 +65,6 @@ func main() {
 	defer shutdownCancel()
 
 	mcpServer.Stop(shutdownCtx)
-	
+
 	slog.Info("Server stopped gracefully")
 }
