@@ -1,5 +1,11 @@
 # Scaled MCP Server
 
+[![CI Status](https://github.com/traego/scaled-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/traego/scaled-mcp/actions/workflows/ci.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/traego/scaled-mcp.svg)](https://pkg.go.dev/github.com/traego/scaled-mcp)
+[![Go Report Card](https://goreportcard.com/badge/github.com/traego/scaled-mcp)](https://goreportcard.com/report/github.com/traego/scaled-mcp)
+[![codecov](https://codecov.io/gh/traego/scaled-mcp/branch/main/graph/badge.svg)](https://codecov.io/gh/traego/scaled-mcp)
+[![License](https://img.shields.io/github/license/traego/scaled-mcp)](https://github.com/traego/scaled-mcp/blob/main/LICENSE)
+
 A horizontally scalable MCP (Message Context Protocol) server implementation that supports load-balanced deployments.
 
 ## Overview
@@ -12,6 +18,12 @@ The Scaled MCP Server is a Go library that implements the MCP 2025-03 specificat
 - **Session Management**: Distributed session management with Redis or in-memory options
 - **Actor System**: Uses an actor-based architecture for handling sessions and message routing
 - **Horizontal Scaling**: Support for load-balanced deployments across multiple nodes
+
+## Installation
+
+```bash
+go get github.com/traego/scaled-mcp@latest
+```
 
 ## Usage
 
@@ -132,6 +144,24 @@ func main() {
 }
 ```
 
+## Dynamic Tool Registry Example
+
+This library supports both static and dynamic tool registries. Here's an example of using a dynamic tool registry:
+
+```go
+// Create a custom tool provider
+toolProvider := NewExampleToolProvider()
+
+// Create a dynamic tool registry with the provider
+registry := resources.NewDynamicToolRegistry(toolProvider)
+
+// Create server with the dynamic tool registry
+cfg := config.DefaultConfig()
+mcpServer, err := server.NewMcpServer(cfg,
+    server.WithToolRegistry(registry),
+)
+```
+
 ## Important Notes
 
 ### CORS Configuration
@@ -142,6 +172,34 @@ When using an external HTTP server with the MCP transport, you need to configure
 
 For production deployments, it's recommended to use Redis for session management to support horizontal scaling. The in-memory session store should only be used for development or testing.
 
-## API Documentation
+## Contributing
 
-See the [GoDoc](https://pkg.go.dev/github.com/traego/scaled-mcp/scaled-mcp-server) for detailed API documentation.
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## Testing
+
+Run tests with Go's testing package:
+
+```bash
+go test -v ./...
+```
+
+For test coverage:
+
+```bash
+go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
+```
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+
+## Documentation
+
+See the [GoDoc](https://pkg.go.dev/github.com/traego/scaled-mcp) for detailed API documentation.
