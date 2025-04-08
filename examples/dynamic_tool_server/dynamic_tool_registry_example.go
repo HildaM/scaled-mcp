@@ -23,10 +23,10 @@ func main() {
 	// Create a custom tool provider
 	toolProvider := NewExampleToolProvider()
 
-	// Create a dynamic tool resources with the provider
+	// Create a dynamic tool registry with the provider
 	registry := resources.NewDynamicToolRegistry(toolProvider)
 
-	// Create server with the dynamic tool resources
+	// Create server with the dynamic tool registry
 	cfg := config.DefaultConfig()
 	mcpServer, err := server.NewMcpServer(cfg,
 		server.WithToolRegistry(registry),
@@ -44,8 +44,8 @@ func main() {
 		}
 	}()
 
-	//slog.Info("Server started", "address", cfg.HTTP.Address)
-	slog.Info("Example dynamic tool resources is available")
+	slog.Info("Server started", "host", cfg.HTTP.Host, "port", cfg.HTTP.Port)
+	slog.Info("Example dynamic tool registry is available")
 	slog.Info("Tools available: weather, calculator")
 
 	// Wait for termination signal
@@ -53,10 +53,7 @@ func main() {
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 	<-sig
 
-	// Shutdown the server
-	if err := mcpServer.Stop(context.Background()); err != nil {
-		slog.Error("Failed to stop server", "error", err)
-	}
+	mcpServer.Stop(ctx)
 }
 
 // ExampleToolProvider implements the resources.ToolProvider interface
@@ -70,7 +67,7 @@ func NewExampleToolProvider() *ExampleToolProvider {
 		tools: make(map[string]resources.Tool),
 	}
 
-	// Register some example resources
+	// Register some example tools
 	provider.tools["weather"] = resources.NewTool("weather").
 		WithDescription("Get weather information for a location").
 		WithString("location").
@@ -108,8 +105,8 @@ func (p *ExampleToolProvider) GetTool(ctx context.Context, name string) (resourc
 	return tool, found
 }
 
-// ListTools returns a list of available resources
-func (p *ExampleToolProvider) ListTools(ctx context.Context, cursor string, limit int) ([]resources.Tool, string, int) {
+// ListTools returns a list of available tools
+func (p *ExampleToolProvider) ListTools(ctx context.Context, cursor string, limit int) ([]resources.Tool, string) {
 	// Default limit if not specified
 	if limit <= 0 {
 		limit = 50
@@ -138,24 +135,24 @@ func (p *ExampleToolProvider) ListTools(ctx context.Context, cursor string, limi
 		endPos = len(names)
 	}
 
-	// No resources or cursor beyond the end
+	// No tools or cursor beyond the end
 	if startPos >= len(names) {
-		return []resources.Tool{}, "", len(p.tools)
+		return []resources.Tool{}, ""
 	}
 
-	// Get the resources for this page
+	// Get the tools for this page
 	result := make([]resources.Tool, 0, endPos-startPos)
 	for i := startPos; i < endPos; i++ {
 		result = append(result, p.tools[names[i]])
 	}
 
-	// Set next cursor if there are more resources
+	// Set next cursor if there are more tools
 	nextCursor := ""
 	if endPos < len(names) {
 		nextCursor = names[endPos-1]
 	}
 
-	return result, nextCursor, len(p.tools)
+	return result, nextCursor
 }
 
 // HandleToolInvocation handles a tool invocation
@@ -166,11 +163,9 @@ func (p *ExampleToolProvider) HandleToolInvocation(ctx context.Context, name str
 	}
 
 	// Validate required parameters
-	for _, param := range tool.Parameters {
-		if param.Required {
-			if _, exists := params[param.Name]; !exists {
-				return nil, fmt.Errorf("%w: missing required parameter %s", resources.ErrInvalidParams, param.Name)
-			}
+	for _, paramName := range tool.InputSchema.Required {
+		if _, exists := params[paramName]; !exists {
+			return nil, fmt.Errorf("%w: missing required parameter %s", resources.ErrInvalidParams, paramName)
 		}
 	}
 
