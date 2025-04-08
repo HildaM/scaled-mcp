@@ -79,7 +79,7 @@ func (t *ToolExecutor) HandleMethod(ctx context.Context, method string, req *mcp
 	// Marshal the result
 	resultJSON, err := json.Marshal(result)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to marshal result: %w", err)
+		return nil, fmt.Errorf("failed to marshal result: %w", err)
 	}
 
 	response.Response = &mcppb.JsonRpcResponse_ResultJson{

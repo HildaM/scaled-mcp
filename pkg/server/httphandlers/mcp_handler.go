@@ -73,7 +73,6 @@ func writeMessage(w http.ResponseWriter, messageId interface{}, msg protocol.JSO
 	}
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(responseJSON)
-	return
 }
 
 // handleError processes errors from request handling
@@ -132,35 +131,5 @@ func handleError(w http.ResponseWriter, err error, id interface{}) {
 	_, writeErr := w.Write(responseJSON)
 	if writeErr != nil {
 		slog.Error("Failed to write error response", "error", writeErr)
-	}
-}
-
-// handleBatchError handles errors from batch request processing
-func handleBatchError(w http.ResponseWriter, err error) {
-	// For batch errors, we typically return a single error response
-	// since the batch as a whole failed
-	slog.Error("Batch processing error", "error", err)
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusInternalServerError)
-
-	// Create a generic batch error response
-	// Note: For batch errors, we don't have a specific ID
-	internalError := protocol.NewInternalError(err.Error(), nil)
-	response := internalError.ToResponse()
-
-	responseJSON, marshalErr := json.Marshal(response)
-	if marshalErr != nil {
-		// If we can't marshal the error response, fall back to a generic JSON-RPC server error
-		slog.Error("Failed to marshal batch error response", "error", marshalErr)
-		fallbackError := protocol.NewServerError(protocol.ErrServer, "Internal server error", nil, nil)
-		fallbackJSON, _ := json.Marshal(fallbackError.ToResponse())
-		_, _ = w.Write(fallbackJSON)
-		return
-	}
-
-	_, writeErr := w.Write(responseJSON)
-	if writeErr != nil {
-		slog.Error("Failed to write batch error response", "error", writeErr)
 	}
 }

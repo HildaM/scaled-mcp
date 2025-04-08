@@ -44,6 +44,4 @@ func (h *MCPHandler) HandleMCPGet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	slog.DebugContext(ctx, "Shutting down MCP Long Lived Session")
-
-	return
 }

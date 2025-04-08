@@ -11,7 +11,7 @@ import (
 func GenerateSecureID(length int) (string, error) {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	charsetLength := big.NewInt(int64(len(charset)))
-	
+
 	result := make([]byte, length)
 	for i := 0; i < length; i++ {
 		// Generate a cryptographically secure random number
@@ -19,11 +19,11 @@ func GenerateSecureID(length int) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("failed to generate secure random number: %w", err)
 		}
-		
+
 		// Use the random number as an index into the charset
 		result[i] = charset[randomIndex.Int64()]
 	}
-	
+
 	return string(result), nil
 }
 

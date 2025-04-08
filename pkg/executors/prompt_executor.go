@@ -115,7 +115,7 @@ func (p *PromptExecutor) handleListPrompts(ctx context.Context, params map[strin
 
 	// Call the registry
 	result := p.serverInfo.GetFeatureRegistry().PromptRegistry.ListPrompts(ctx, opts)
-	
+
 	return result, nil
 }
 
@@ -154,12 +154,12 @@ func (p *PromptExecutor) handleGetPrompt(ctx context.Context, params map[string]
 	}
 
 	// If arguments were provided, process the prompt template
-	if arguments != nil && len(arguments) > 0 {
+	if len(arguments) > 0 {
 		messages, err := p.serverInfo.GetFeatureRegistry().PromptRegistry.ProcessPrompt(ctx, name, arguments)
 		if err != nil {
 			return nil, fmt.Errorf("error processing prompt template: %w", err)
 		}
-		
+
 		return map[string]interface{}{
 			"messages":    messages,
 			"description": prompt.Description,

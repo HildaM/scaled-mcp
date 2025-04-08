@@ -42,11 +42,11 @@ func (e *JsonRpcError) ToResponse() JSONRPCMessage {
 		"code":    e.Code,
 		"message": e.Message,
 	}
-	
+
 	if e.Data != nil {
 		errorObj["data"] = e.Data
 	}
-	
+
 	return JSONRPCMessage{
 		JSONRPC: "2.0",
 		ID:      e.ID,
@@ -61,17 +61,17 @@ func (e *JsonRpcError) Is(target error) bool {
 	if !ok {
 		return false
 	}
-	
+
 	// If the target error has a specific code, check if it matches
 	if targetErr.Code != 0 && e.Code != targetErr.Code {
 		return false
 	}
-	
+
 	// If the target error has a specific message, check if it matches
 	if targetErr.Message != "" && e.Message != targetErr.Message {
 		return false
 	}
-	
+
 	return true
 }
 
@@ -150,7 +150,7 @@ func IsJsonRpcError(err error) (*JsonRpcError, bool) {
 	if err == nil {
 		return nil, false
 	}
-	
+
 	rpcErr, ok := err.(*JsonRpcError)
 	return rpcErr, ok
 }
