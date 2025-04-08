@@ -25,6 +25,8 @@ The Scaled MCP Server is a Go library that implements the MCP 2025-03 specificat
 go get github.com/traego/scaled-mcp@latest
 ```
 
+> **Note:** This library requires Go 1.24 or higher.
+
 ## Usage
 
 ### Basic Server
