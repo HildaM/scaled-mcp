@@ -38,16 +38,16 @@ func TestGenerateSecureID(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Generate an ID
 			id, err := GenerateSecureID(tc.length)
-			
+
 			// Check there's no error
 			require.NoError(t, err)
-			
+
 			// Check the length is correct
 			assert.Equal(t, tc.length, len(id))
-			
+
 			// Check the ID contains only valid characters
 			assert.True(t, validCharsRegex.MatchString(id), "ID contains invalid characters: %s", id)
-			
+
 			// Generate another ID to ensure they're different (very low probability of collision)
 			if tc.length > 0 {
 				anotherId, err := GenerateSecureID(tc.length)
@@ -88,13 +88,13 @@ func TestMustGenerateSecureID(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// This should not panic
 			id := MustGenerateSecureID(tc.length)
-			
+
 			// Check the length is correct
 			assert.Equal(t, tc.length, len(id))
-			
+
 			// Check the ID contains only valid characters
 			assert.True(t, validCharsRegex.MatchString(id), "ID contains invalid characters: %s", id)
-			
+
 			// Generate another ID to ensure they're different (very low probability of collision)
 			if tc.length > 0 {
 				anotherId := MustGenerateSecureID(tc.length)
@@ -109,7 +109,7 @@ func TestMustGenerateSecureID(t *testing.T) {
 // but we can verify the function signature and behavior in normal cases.
 func TestMustGenerateSecureID_Signature(t *testing.T) {
 	// Verify that the function takes an int and returns a string
-	var length int = 10
-	result := MustGenerateSecureID(length)
+	result := MustGenerateSecureID(10)
 	assert.IsType(t, "", result)
+	require.Len(t, result, 10)
 }
