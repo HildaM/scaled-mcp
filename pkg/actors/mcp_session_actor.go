@@ -4,15 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/traego/scaled-mcp/scaled-mcp-server/internal/utils"
-	"github.com/traego/scaled-mcp/scaled-mcp-server/pkg/config"
+	"github.com/traego/scaled-mcp/internal/utils"
+	"github.com/traego/scaled-mcp/pkg/config"
 	"log/slog"
 	"time"
 
 	"github.com/tochemey/goakt/v3/actor"
 	"github.com/tochemey/goakt/v3/goaktpb"
-	"github.com/traego/scaled-mcp/scaled-mcp-server/pkg/proto/mcppb"
-	"github.com/traego/scaled-mcp/scaled-mcp-server/pkg/protocol"
+	"github.com/traego/scaled-mcp/pkg/proto/mcppb"
+	"github.com/traego/scaled-mcp/pkg/protocol"
 )
 
 // McpSessionActor represents an actor that handles MCP session requests
@@ -135,6 +135,15 @@ func (a *McpSessionActor) Receive(ctx *actor.ReceiveContext) {
 			if err != nil {
 				slog.ErrorContext(ctx.Context(), "error in shutdown", "session_id", a.sessionId)
 			}
+		}
+		err := ctx.ActorSystem().Schedule(ctx.Context(), &mcppb.CheckSessionTTL{}, ctx.Self(), 1*time.Minute)
+		if err != nil {
+			ctx.Err(fmt.Errorf("error in scheduling session TTL check message: %v", err))
+		}
+	case *mcppb.CheckSessionTTL:
+		if a.lastActivity.Add(a.sessionTimeout).Before(time.Now()) {
+			ctx.Logger().Debug("mcp session actor timeout", "session_id", a.sessionId)
+			ctx.Shutdown()
 		}
 	default:
 		// Mark message as unhandled

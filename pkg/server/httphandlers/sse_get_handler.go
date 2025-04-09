@@ -2,13 +2,13 @@ package httphandlers
 
 import (
 	"fmt"
-	"github.com/traego/scaled-mcp/scaled-mcp-server/internal/utils"
-	"github.com/traego/scaled-mcp/scaled-mcp-server/pkg/actors"
-	"github.com/traego/scaled-mcp/scaled-mcp-server/pkg/channels"
+	"github.com/traego/scaled-mcp/internal/utils"
+	"github.com/traego/scaled-mcp/pkg/actors"
+	"github.com/traego/scaled-mcp/pkg/channels"
 	"net/http"
 )
 
-// This is backwards compatiblity for 2024 SSE sessions, for server to client messages
+// This is backwards compatibility for 2024 SSE sessions, for server to client messages
 func (h *MCPHandler) HandleSSEGet(w http.ResponseWriter, r *http.Request) {
 	// I think this is easy...spin up the death watcher, spin up the connection watcher, wait for death to come
 	ctx := r.Context() // TODO Add logging details around these
