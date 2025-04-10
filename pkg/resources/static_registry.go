@@ -32,6 +32,11 @@ func (r *StaticToolRegistry) RegisterTool(tool Tool, handler ToolHandler) error 
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
+	// Check if a tool with this name already exists
+	if _, exists := r.tools[tool.Name]; exists {
+		return fmt.Errorf("tool with name %q already exists", tool.Name)
+	}
+
 	r.tools[tool.Name] = tool
 	r.handlers[tool.Name] = handler
 
@@ -129,6 +134,20 @@ func (r *StaticToolRegistry) CallTool(ctx context.Context, name string, params m
 	}
 
 	return handler(ctx, params)
+}
+
+// SetToolHandler sets a handler for an existing tool
+func (r *StaticToolRegistry) SetToolHandler(name string, handler ToolHandler) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if _, exists := r.tools[name]; !exists {
+		return fmt.Errorf("%w: tool %s not found", ErrToolNotFound, name)
+	}
+
+	r.handlers[name] = handler
+	slog.Info("Set handler for tool", "name", name)
+	return nil
 }
 
 // Ensure StaticToolRegistry implements ToolRegistry
