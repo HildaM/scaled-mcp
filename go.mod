@@ -42,7 +42,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/r3labs/sse/v2 v2.10.0 // indirect
-	github.com/redis/go-redis/v9 v9.7.1 // indirect
+	github.com/redis/go-redis/v9 v9.7.3 // indirect
 	github.com/reugn/go-quartz v0.14.0 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529 // indirect
