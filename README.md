@@ -326,8 +326,18 @@ When using an external HTTP server with the MCP transport, you need to configure
 For production deployments, it's recommended to use Redis for session management to support horizontal scaling. The in-memory session store should only be used for development or testing.
 
 ## To Do
-- [ ] Authorization Examples + Context Flow Through
+- [ ] Authorization Examples + Auth Context Flow Through
+- [ ] Metrics endpoint (prometheus), covering actor starts / stops, avg session length, etc
+- [ ] Session Actor Hooks
+- [ ] MCP Spec
+  - [ ] List Change Notifications
+  - [ ] Sampling
+  - [ ] Roots
+  - [ ] Completion
+  - [ ] Logging
+- [ ] A2A Spec
 - [ ] K8S Clustering Hooked Up + Tested
+- [ ] Search support (https://github.com/modelcontextprotocol/modelcontextprotocol/pull/322)
 - [ ] Full testing of all features (resources, prompts, etc.)
 - [ ] Test Coverage to 80%
 - [ ] Cleanup New Server API just a bit to make it easier to standup
