@@ -59,7 +59,7 @@ func NewMcpSessionStateMachine(serverInfo config.McpServerInfo, sessionID string
 	}
 
 	// Create state machine starting in uninitialized state
-	fsm := utils.NewStateMachineActor(StateUninitialized, data)
+	fsm := utils.NewStateMachineActor(sessionID, StateUninitialized, data)
 
 	// Configure state handlers
 	fsm.When(StateUninitialized, handleUninitializedState).
@@ -155,7 +155,7 @@ func handleUnhandledMessage(ctx *actor.ReceiveContext, data utils.Data, message 
 func handlePostStart(ctx *actor.ReceiveContext, sessionData *SessionData) (utils.MessageHandlingResult, error) {
 	ctx.Logger().Debug("mcp session actor finished starting, sending cleanup message", "session_id", sessionData.SessionID)
 	//err := ctx.ActorSystem().ScheduleOnce(ctx.Context(), &mcppb.TryCleanupPreInitialized{}, ctx.Self(), 1*time.Second) // sessionData.ServerInfo.GetServerConfig().Session.TTL/10)
-	actorutils.ScheduleOnce(ctx.Context(), ctx.Self(), &mcppb.TryCleanupPreInitialized{}, sessionData.ServerInfo.GetServerConfig().Session.TTL/10)
+	actorutils.ScheduleOnce(ctx.Context(), ctx.Self().ActorSystem(), ctx.Self().Name(), &mcppb.TryCleanupPreInitialized{}, sessionData.ServerInfo.GetServerConfig().Session.TTL/10)
 	return utils.Stay(sessionData)
 }
 
@@ -251,7 +251,7 @@ func handleTryCleanupPreInitialized(ctx *actor.ReceiveContext, sessionData *Sess
 	}
 
 	// Schedule the session TTL check
-	actorutils.Schedule(ctx.Context(), ctx.Self(), &mcppb.CheckSessionTTL{}, sessionData.ServerInfo.GetServerConfig().Session.TTL/6)
+	actorutils.Schedule(ctx.Context(), ctx.Self().ActorSystem(), ctx.Self().Name(), &mcppb.CheckSessionTTL{}, sessionData.ServerInfo.GetServerConfig().Session.TTL/6)
 
 	return utils.Stay(sessionData)
 }

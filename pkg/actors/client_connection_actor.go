@@ -25,7 +25,7 @@ For a websocket connection, you would actually allow client requests to come up 
 2. We're going to support websockets here too
 */
 
-type clientConnectionActor struct {
+type ClientConnectionActor struct {
 	cfg                  *config.ServerConfig
 	params               *protocol.InitializeParams
 	sessionId            string
@@ -41,7 +41,7 @@ func NewClientConnectionActor(cfg *config.ServerConfig, sessionId string, params
 	// I think here we actually need to do the negotiation, so that we can either start with one way or two way comms
 
 	slog.Info("starting client connection actor")
-	return &clientConnectionActor{
+	return &ClientConnectionActor{
 		cfg:                  cfg,
 		params:               params,
 		sessionId:            sessionId,
@@ -51,7 +51,7 @@ func NewClientConnectionActor(cfg *config.ServerConfig, sessionId string, params
 	}
 }
 
-func (c *clientConnectionActor) PreStart(ctx context.Context) error {
+func (c *ClientConnectionActor) PreStart(ctx context.Context) error {
 	if c.defaultSseConnection {
 		c.connectionId = utils.GetDefaultSSEConnectionName(c.sessionId)
 	} else {
@@ -62,7 +62,7 @@ func (c *clientConnectionActor) PreStart(ctx context.Context) error {
 	return nil
 }
 
-func (c *clientConnectionActor) Receive(ctx *actor.ReceiveContext) {
+func (c *ClientConnectionActor) Receive(ctx *actor.ReceiveContext) {
 	// For one way communication, this will always be messages coming from other parts of the system
 	message := ctx.Message()
 
@@ -70,8 +70,9 @@ func (c *clientConnectionActor) Receive(ctx *actor.ReceiveContext) {
 	switch msg := message.(type) {
 	case *goaktpb.PostStart:
 		{
+			san := utils.GetSessionActorName(c.sessionId)
 			// Register with the session. If any issues, kill myself before doing anything else
-			_, sa, err := ctx.ActorSystem().ActorOf(ctx.Context(), utils.GetSessionActorName(c.sessionId))
+			_, sa, err := ctx.ActorSystem().ActorOf(ctx.Context(), san)
 			if err != nil {
 				ctx.Logger().Error("error registering connection with session, shutting down", "sessionId", c.sessionId, "err", err)
 				// Send an empty endpoint to signal failure
@@ -84,7 +85,7 @@ func (c *clientConnectionActor) Receive(ctx *actor.ReceiveContext) {
 			sa.Watch(ctx.Self())
 
 			reg := mcppb.RegisterConnection{ConnectionId: c.connectionId}
-			registerResp := ctx.Ask(sa, &reg, c.cfg.RequestTimeout)
+			registerResp := ctx.SendSync(san, &reg, c.cfg.RequestTimeout)
 			if err != nil {
 				ctx.Logger().Error("error registering connection with session, shutting down", "sessionId", c.sessionId, "err", err)
 				c.channel.Close()
@@ -119,7 +120,7 @@ func (c *clientConnectionActor) Receive(ctx *actor.ReceiveContext) {
 			}
 		}
 	case *mcppb.JsonRpcResponse:
-		slog.Info(fmt.Sprintf("Received message for client delivery sessionId = %s messageId = %s", c.sessionId, msg.Id))
+		slog.DebugContext(ctx.Context(), fmt.Sprintf("Received message for client delivery sessionId = %s messageId = %s", c.sessionId, msg.Id))
 		jm, err := protocol.ConvertProtoToJSONResponse(msg)
 		if err != nil {
 			slog.Error("problem converting proto to json response", "err", err)
@@ -140,9 +141,9 @@ func (c *clientConnectionActor) Receive(ctx *actor.ReceiveContext) {
 	}
 }
 
-func (c *clientConnectionActor) PostStop(ctx context.Context) error {
+func (c *ClientConnectionActor) PostStop(ctx context.Context) error {
 	slog.Debug(fmt.Sprintf("Stopping client connection %s actor for session %s", c.connectionId, c.sessionId))
 	return nil
 }
 
-var _ actor.Actor = (*clientConnectionActor)(nil)
+var _ actor.Actor = (*ClientConnectionActor)(nil)
