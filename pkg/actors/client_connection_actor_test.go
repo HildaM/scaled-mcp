@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/tochemey/goakt/v3/actor"
 	"github.com/tochemey/goakt/v3/goaktpb"
+
+	"github.com/traego/scaled-mcp/internal/logger"
 	"github.com/traego/scaled-mcp/pkg/config"
 	"github.com/traego/scaled-mcp/pkg/proto/mcppb"
 	"github.com/traego/scaled-mcp/pkg/utils"
@@ -182,6 +184,7 @@ func TestClientConnectionActor(t *testing.T) {
 	ctx := context.Background()
 	actorSystem, err := actor.NewActorSystem("test-system",
 		actor.WithPassivationDisabled(),
+		actor.WithLogger(logger.DefaultSlogLogger),
 	)
 	require.NoError(t, err)
 
@@ -190,10 +193,10 @@ func TestClientConnectionActor(t *testing.T) {
 	require.NoError(t, err)
 
 	// Ensure we clean up after the test
-	defer func() {
+	t.Cleanup(func() {
 		err := actorSystem.Stop(ctx)
 		require.NoError(t, err)
-	}()
+	})
 
 	t.Run("should initialize with default SSE connection", func(t *testing.T) {
 		// Create a channel
@@ -279,10 +282,6 @@ func TestClientConnectionActor(t *testing.T) {
 		ccaPID, err := actorSystem.Spawn(ctx, "test-client-conn-no-session", cca)
 		require.NoError(t, err)
 
-		// Send PostStart message to trigger session lookup
-		err = actor.Tell(ctx, ccaPID, &goaktpb.PostStart{})
-		require.NoError(t, err)
-
 		// Give some time for the message to be processed
 		time.Sleep(500 * time.Millisecond)
 
@@ -290,8 +289,8 @@ func TestClientConnectionActor(t *testing.T) {
 		assert.True(t, channel.IsClosed(), "Expected connection to be closed when session actor not found")
 
 		// The actor should have shut itself down, but we'll try to clean up anyway
-		poison := &goaktpb.PoisonPill{}
-		_ = actor.Tell(ctx, ccaPID, poison)
+		err = ccaPID.Shutdown(ctx)
+		require.NoError(t, err)
 
 		time.Sleep(100 * time.Millisecond)
 	})
@@ -323,10 +322,6 @@ func TestClientConnectionActor(t *testing.T) {
 		ccaPID, err := actorSystem.Spawn(ctx, "test-client-conn-success", cca)
 		require.NoError(t, err)
 
-		// Send PostStart message to trigger session registration
-		err = actor.Tell(ctx, ccaPID, &goaktpb.PostStart{})
-		require.NoError(t, err)
-
 		// Give some time for the message to be processed
 		time.Sleep(500 * time.Millisecond)
 
@@ -334,10 +329,10 @@ func TestClientConnectionActor(t *testing.T) {
 		assert.GreaterOrEqual(t, len(channel.GetEndpoints()), 1)
 
 		// Clean up
-		poison := &goaktpb.PoisonPill{}
-		err = actor.Tell(ctx, sessionPID, poison)
+		err = sessionPID.Shutdown(ctx)
 		require.NoError(t, err)
-		_ = actor.Tell(ctx, ccaPID, poison)
+		err = ccaPID.Shutdown(ctx)
+		require.NoError(t, err)
 
 		time.Sleep(100 * time.Millisecond)
 	})
@@ -371,11 +366,7 @@ func TestClientConnectionActor(t *testing.T) {
 		)
 
 		// Spawn the actor
-		ccaPID, err := actorSystem.Spawn(ctx, "test-client-conn-fail", cca)
-		require.NoError(t, err)
-
-		// Send PostStart message to trigger session registration
-		err = actor.Tell(ctx, ccaPID, &goaktpb.PostStart{})
+		_, err = actorSystem.Spawn(ctx, "test-client-conn-fail", cca)
 		require.NoError(t, err)
 
 		// Give some time for the message to be processed
@@ -456,8 +447,15 @@ func TestClientConnectionActor(t *testing.T) {
 		// Create a channel
 		channel := NewInMemoryChannel()
 
-		// Create the client connection actor
-		sessionId := "test-session-terminated"
+		// Create a mock session actor
+		mockSession := NewMockSessionActor(nil) // Use default success response
+
+		// Spawn the mock session actor
+		sessionId := "test-session-json"
+		sessionActorName := utils.GetSessionActorName(sessionId)
+		_, err := actorSystem.Spawn(ctx, sessionActorName, mockSession)
+		require.NoError(t, err)
+
 		cca := NewClientConnectionActor(
 			config.DefaultConfig(),
 			sessionId,
@@ -471,6 +469,9 @@ func TestClientConnectionActor(t *testing.T) {
 		ccaPID, err := actorSystem.Spawn(ctx, "test-client-conn-terminated", cca)
 		require.NoError(t, err)
 
+		// wait for the actor to be initialized
+		time.Sleep(time.Second)
+
 		// Create a terminated message
 		terminatedMsg := &goaktpb.Terminated{
 			ActorId: utils.GetSessionActorName(sessionId),
@@ -482,12 +483,6 @@ func TestClientConnectionActor(t *testing.T) {
 
 		// Give some time for the message to be processed
 		time.Sleep(500 * time.Millisecond)
-
-		// Clean up - this might fail if the actor already shut down
-		poison := &goaktpb.PoisonPill{}
-		_ = actor.Tell(ctx, ccaPID, poison)
-
-		time.Sleep(100 * time.Millisecond)
 	})
 
 	t.Run("should handle unknown messages", func(t *testing.T) {

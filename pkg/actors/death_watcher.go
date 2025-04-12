@@ -3,9 +3,8 @@ package actors
 import (
 	"context"
 	"fmt"
-	"github.com/google/uuid"
-	"log/slog"
 
+	"github.com/google/uuid"
 	"github.com/tochemey/goakt/v3/actor"
 	"github.com/tochemey/goakt/v3/goaktpb"
 )
@@ -31,7 +30,7 @@ func SpawnDeathWatcher(ctx context.Context, actorSystem actor.ActorSystem, pid *
 		return nil, nil, fmt.Errorf("failed to spawn death watcher: %w", err)
 	}
 
-	pid.Watch(dwa)
+	dwa.Watch(pid)
 
 	return dwa, notifications, nil
 }
@@ -45,12 +44,9 @@ func (d *DeathWatcher) Receive(ctx *actor.ReceiveContext) {
 
 	// Handle different message types
 	switch msg := message.(type) {
-	case *goaktpb.PostStart:
-		// d.pid.Watch(ctx.Self())
-		return
 	case *goaktpb.Terminated:
 		if msg.GetActorId() == d.pid.ID() {
-			slog.Debug("DeathWatcher received termination notification",
+			ctx.Logger().Debug("DeathWatcher received termination notification",
 				"actor", ctx.Sender().ID())
 
 			// Only try to send if the channel exists
@@ -60,7 +56,7 @@ func (d *DeathWatcher) Receive(ctx *actor.ReceiveContext) {
 					// Message sent successfully
 				default:
 					// Channel is full or closed, log and continue
-					slog.Warn("Failed to send termination notification, channel might be full or closed",
+					ctx.Logger().Warn("Failed to send termination notification, channel might be full or closed",
 						"actor", ctx.Sender().ID())
 				}
 			}
