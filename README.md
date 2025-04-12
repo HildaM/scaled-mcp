@@ -2,7 +2,6 @@
 
 [![CI Status](https://github.com/traego/scaled-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/traego/scaled-mcp/actions/workflows/ci.yml)
 [![Go Reference](https://pkg.go.dev/badge/github.com/traego/scaled-mcp.svg)](https://pkg.go.dev/github.com/traego/scaled-mcp)
-[![Go Report Card](https://goreportcard.com/badge/github.com/traego/scaled-mcp)](https://goreportcard.com/report/github.com/traego/scaled-mcp)
 [![Go Report Card](https://img.shields.io/badge/go%20report-A+-brightgreen.svg?style=flat)](https://goreportcard.com/report/github.com/traego/scaled-mcp)
 [![codecov](https://codecov.io/gh/traego/scaled-mcp/branch/main/graph/badge.svg)](https://codecov.io/gh/traego/scaled-mcp)
 [![License](https://img.shields.io/github/license/traego/scaled-mcp)](https://github.com/traego/scaled-mcp/blob/main/LICENSE)
