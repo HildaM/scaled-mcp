@@ -336,6 +336,7 @@ For production deployments, it's recommended to use Redis for session management
   - [ ] Completion
   - [ ] Logging
 - [ ] A2A Spec
+  - [ ] Added details here https://github.com/Traego/scaled-mcp/wiki/A2A-Support
 - [ ] K8S Clustering Hooked Up + Tested
 - [ ] Search support (https://github.com/modelcontextprotocol/modelcontextprotocol/pull/322)
 - [ ] Full testing of all features (resources, prompts, etc.)
