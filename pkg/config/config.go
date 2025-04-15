@@ -32,9 +32,6 @@ type ServerConfig struct {
 
 	EnableWebSockets bool `json:"enable_websockets"`
 
-	// Whether to enable WebSocket transport
-	EnableWebSocket bool `json:"enable_websocket"`
-
 	// Whether to support backward compatibility with older MCP versions
 	BackwardCompatible20241105 bool `json:"backward_compatible_2024_11_05"`
 
@@ -158,9 +155,6 @@ type RedisConfig struct {
 
 // ActorConfig holds the actor system configuration
 type ActorConfig struct {
-	// Actor system name
-	SystemName string `json:"system_name"`
-
 	// Number of workers for handling actor messages
 	NumWorkers int `json:"num_workers"`
 
@@ -209,7 +203,6 @@ func DefaultConfig() *ServerConfig {
 			KeyPrefix:         "mcp:session:",
 		},
 		Actor: ActorConfig{
-			SystemName:      "mcp-actor-system",
 			NumWorkers:      10,
 			UseRemoteActors: false,
 			RemoteConfig: RemoteActorConfig{
@@ -223,7 +216,7 @@ func DefaultConfig() *ServerConfig {
 		},
 		ProtocolVersion:            "1.0.0",
 		EnableSSE:                  true,
-		EnableWebSocket:            false,
+		EnableWebSockets:           false,
 		BackwardCompatible20241105: false,
 		ServerCapabilities: protocol.ServerCapabilities{
 			Tools:     &protocol.ToolsServerCapability{},

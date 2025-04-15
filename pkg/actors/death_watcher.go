@@ -3,20 +3,39 @@ package actors
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/tochemey/goakt/v3/actor"
 	"github.com/tochemey/goakt/v3/goaktpb"
 )
 
+type ActorNotStarted struct {
+	WatchId string
+}
+
+func (e *ActorNotStarted) GetWatchId() string { return e.WatchId }
+
+type ActorTerminatedMessage struct {
+	WatchId string
+	ActorId string
+}
+
+func (e *ActorTerminatedMessage) GetWatchId() string { return e.WatchId }
+
+type DeathWatchMessage interface {
+	GetWatchId() string
+}
+
 type DeathWatcher struct {
-	notifications chan *goaktpb.Terminated
+	notifications chan DeathWatchMessage // *goaktpb.Terminated
 	pid           *actor.PID
 	watchId       string
 }
 
-func SpawnDeathWatcher(ctx context.Context, actorSystem actor.ActorSystem, pid *actor.PID) (*actor.PID, <-chan *goaktpb.Terminated, error) {
-	notifications := make(chan *goaktpb.Terminated)
+func SpawnDeathWatcher(ctx context.Context, actorSystem actor.ActorSystem, pid *actor.PID) (*actor.PID, <-chan DeathWatchMessage, error) {
+	notifications := make(chan DeathWatchMessage)
 	watchId := uuid.New().String()
 
 	dw := &DeathWatcher{
@@ -25,12 +44,27 @@ func SpawnDeathWatcher(ctx context.Context, actorSystem actor.ActorSystem, pid *
 		watchId:       watchId,
 	}
 
-	dwa, err := actorSystem.Spawn(ctx, "death-watcher"+watchId, dw)
+	deathWatchName := "death-watcher" + watchId
+	slog.DebugContext(ctx, "spawning death watcher "+deathWatchName)
+
+	dwa, err := actorSystem.Spawn(ctx, deathWatchName, dw)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to spawn death watcher: %w", err)
 	}
 
-	dwa.Watch(pid)
+	time.Sleep(100 * time.Millisecond)
+
+	_, lookup, _ := actorSystem.ActorOf(ctx, pid.Name())
+	if lookup != nil && lookup.IsRunning() {
+		slog.InfoContext(ctx, "found actor, starting death watch", "watchId", watchId, "actorId", pid.ID())
+		dwa.Watch(pid)
+	} else {
+		slog.InfoContext(ctx, "did not find actor, sending term message and shutting down", "watchId", watchId)
+		go func() {
+			notifications <- &ActorNotStarted{watchId}
+		}()
+		_ = dwa.Shutdown(ctx)
+	}
 
 	return dwa, notifications, nil
 }
@@ -42,6 +76,8 @@ func (d *DeathWatcher) PreStart(ctx context.Context) error {
 func (d *DeathWatcher) Receive(ctx *actor.ReceiveContext) {
 	message := ctx.Message()
 
+	ctx.Logger().Info("death watcher received message", message)
+
 	// Handle different message types
 	switch msg := message.(type) {
 	case *goaktpb.Terminated:
@@ -52,7 +88,7 @@ func (d *DeathWatcher) Receive(ctx *actor.ReceiveContext) {
 			// Only try to send if the channel exists
 			if d.notifications != nil {
 				select {
-				case d.notifications <- msg:
+				case d.notifications <- &ActorTerminatedMessage{WatchId: d.watchId, ActorId: msg.GetActorId()}:
 					// Message sent successfully
 				default:
 					// Channel is full or closed, log and continue
