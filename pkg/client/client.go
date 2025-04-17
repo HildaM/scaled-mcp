@@ -1,6 +1,7 @@
+package client
+
 // Package client provides a robust MCP client implementation that supports both
 // the 2024-11-05 and 2025-03-26 MCP specifications.
-package client
 
 import (
 	"context"
@@ -106,6 +107,15 @@ type McpClient interface {
 
 	// RemoveEventHandler removes an event handler.
 	RemoveEventHandler(handler EventHandler)
+
+	// ListTools retrieves the list of available tools from the server.
+	ListTools(ctx context.Context) (*protocol.ToolListResult, error)
+
+	// FindTool searches for a tool by name in the tools list.
+	FindTool(ctx context.Context, toolName string) (*protocol.Tool, error)
+
+	// CallTool calls a specific tool with the given parameters.
+	CallTool(ctx context.Context, toolName string, params interface{}) (*protocol.JSONRPCMessage, error)
 }
 
 // EventHandler is the interface for handling server-sent events.

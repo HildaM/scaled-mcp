@@ -30,38 +30,16 @@ func (t *ToolExecutor) CanHandleMethod(method string) bool {
 
 // handleToolMethod handles tool-related methods
 func (t *ToolExecutor) HandleMethod(ctx context.Context, method string, req *mcppb.JsonRpcRequest) (*mcppb.JsonRpcResponse, error) {
-	// Create base response
-	response := &mcppb.JsonRpcResponse{
-		Jsonrpc: "2.0",
-	}
-
-	// Copy the ID from the request
-	switch id := req.Id.(type) {
-	case *mcppb.JsonRpcRequest_IntId:
-		response.Id = &mcppb.JsonRpcResponse_IntId{IntId: id.IntId}
-	case *mcppb.JsonRpcRequest_StringId:
-		response.Id = &mcppb.JsonRpcResponse_StringId{StringId: id.StringId}
-	}
-
-	// Check if tool registry is available
-	if t.serverInfo.GetFeatureRegistry().ToolRegistry == nil {
-		return nil, protocol.NewMethodNotFoundError(req.Method, req.Id)
-	}
-
-	// Parse the params
-	var params map[string]interface{}
-	if req.ParamsJson != "" {
-		if err := json.Unmarshal([]byte(req.ParamsJson), &params); err != nil {
-			return nil, protocol.NewInvalidParamsError("Invalid parameters: "+err.Error(), req.Id)
-		}
-	} else {
-		params = make(map[string]interface{})
+	// Use the utility function to process the request
+	response, params, err := ProcessRequest(method, req, t.serverInfo.GetFeatureRegistry().ToolRegistry != nil)
+	if err != nil {
+		return nil, err
 	}
 
 	var result interface{}
-	var err error
 
-	switch req.Method {
+	// Handle the method
+	switch method {
 	case "tools/list":
 		result, err = t.handleListTools(ctx, params)
 	case "tools/get":
@@ -73,7 +51,7 @@ func (t *ToolExecutor) HandleMethod(ctx context.Context, method string, req *mcp
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("error handling %s: %w"+req.Method, err)
+		return nil, fmt.Errorf("error handling %s: %w", req.Method, err)
 	}
 
 	// Marshal the result
@@ -90,7 +68,7 @@ func (t *ToolExecutor) HandleMethod(ctx context.Context, method string, req *mcp
 }
 
 // handleListTools handles a request to list tools
-func (t *ToolExecutor) handleListTools(ctx context.Context, params map[string]interface{}) (resources.ToolListResult, error) {
+func (t *ToolExecutor) handleListTools(ctx context.Context, params map[string]interface{}) (protocol.ToolListResult, error) {
 	var cursor string
 
 	// Extract cursor
@@ -101,32 +79,35 @@ func (t *ToolExecutor) handleListTools(ctx context.Context, params map[string]in
 	}
 
 	// Create options
-	opts := resources.ToolListOptions{
+	opts := protocol.ToolListOptions{
 		Cursor: cursor,
 	}
 
-	results := t.serverInfo.GetFeatureRegistry().ToolRegistry.ListTools(ctx, opts)
-	// Call the registry
+	results, err := t.serverInfo.GetFeatureRegistry().ToolRegistry.ListTools(ctx, opts)
+	if err != nil {
+		return protocol.ToolListResult{}, fmt.Errorf("error listing tools: %w", err)
+	}
+
 	return results, nil
 }
 
 // handleGetTool handles a request to get a specific tool
-func (t *ToolExecutor) handleGetTool(ctx context.Context, params map[string]interface{}) (resources.Tool, error) {
+func (t *ToolExecutor) handleGetTool(ctx context.Context, params map[string]interface{}) (protocol.Tool, error) {
 	// Extract name
 	nameVal, ok := params["name"]
 	if !ok {
-		return resources.Tool{}, fmt.Errorf("%w: tool name is required", resources.ErrInvalidParams)
+		return protocol.Tool{}, fmt.Errorf("%w: tool name is required", resources.ErrInvalidParams)
 	}
 
 	name, ok := nameVal.(string)
 	if !ok || name == "" {
-		return resources.Tool{}, fmt.Errorf("%w: tool name must be a non-empty string", resources.ErrInvalidParams)
+		return protocol.Tool{}, fmt.Errorf("%w: tool name must be a non-empty string", resources.ErrInvalidParams)
 	}
 
 	// Get the tool
-	tool, found := t.serverInfo.GetFeatureRegistry().ToolRegistry.GetTool(ctx, name)
-	if !found {
-		return resources.Tool{}, fmt.Errorf("%w: tool '%s' not found", resources.ErrToolNotFound, name)
+	tool, err := t.serverInfo.GetFeatureRegistry().ToolRegistry.GetTool(ctx, name)
+	if err != nil {
+		return protocol.Tool{}, fmt.Errorf("error getting tool %s: %w", name, err)
 	}
 
 	return tool, nil
