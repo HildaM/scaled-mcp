@@ -10,12 +10,84 @@ var (
 	ErrResourceNotFound = errors.New("resource not found")
 )
 
-// ResourceContents represents the contents of a resource
-type ResourceContents struct {
+// ResourceContents defines the interface for resource content, which can be text or binary.
+type ResourceContents interface {
+	GetURI() string
+	GetMimeType() string
+	IsText() bool
+	IsBinary() bool
+	// GetText returns the text content. Returns an empty string if it's binary content.
+	GetText() string
+	// GetBlob returns the binary content. Returns nil if it's text content.
+	GetBlob() []byte
+}
+
+// ResourceContentText holds text-based resource content.
+type ResourceContentText struct {
 	URI      string `json:"uri"`
 	MimeType string `json:"mimeType,omitempty"`
-	Content  string `json:"content,omitempty"`
-	Blob     []byte `json:"blob,omitempty"`
+	Text     string `json:"text"`
+}
+
+// GetURI implements the ResourceContents interface.
+func (t ResourceContentText) GetURI() string { return t.URI }
+
+// GetMimeType implements the ResourceContents interface.
+func (t ResourceContentText) GetMimeType() string { return t.MimeType }
+
+// IsText implements the ResourceContents interface.
+func (t ResourceContentText) IsText() bool { return true }
+
+// IsBinary implements the ResourceContents interface.
+func (t ResourceContentText) IsBinary() bool { return false }
+
+// GetText implements the ResourceContents interface.
+func (t ResourceContentText) GetText() string { return t.Text }
+
+// GetBlob implements the ResourceContents interface.
+func (t ResourceContentText) GetBlob() []byte { return nil }
+
+// ResourceContentBinary holds binary resource content.
+type ResourceContentBinary struct {
+	URI      string `json:"uri"`
+	MimeType string `json:"mimeType,omitempty"`
+	Blob     []byte `json:"blob"`
+}
+
+// GetURI implements the ResourceContents interface.
+func (b ResourceContentBinary) GetURI() string { return b.URI }
+
+// GetMimeType implements the ResourceContents interface.
+func (b ResourceContentBinary) GetMimeType() string { return b.MimeType }
+
+// IsText implements the ResourceContents interface.
+func (b ResourceContentBinary) IsText() bool { return false }
+
+// IsBinary implements the ResourceContents interface.
+func (b ResourceContentBinary) IsBinary() bool { return true }
+
+// GetText implements the ResourceContents interface.
+func (b ResourceContentBinary) GetText() string { return "" }
+
+// GetBlob implements the ResourceContents interface.
+func (b ResourceContentBinary) GetBlob() []byte { return b.Blob }
+
+// NewTextResourceContents creates a new text resource contents object.
+func NewTextResourceContents(uri string, mimeType string, text string) ResourceContents {
+	return &ResourceContentText{
+		URI:      uri,
+		MimeType: mimeType,
+		Text:     text,
+	}
+}
+
+// NewBinaryResourceContents creates a new binary resource contents object.
+func NewBinaryResourceContents(uri string, mimeType string, blob []byte) ResourceContents {
+	return ResourceContentBinary{
+		URI:      uri,
+		MimeType: mimeType,
+		Blob:     blob,
+	}
 }
 
 // Resource represents an MCP resource definition
